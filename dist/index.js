@@ -164,7 +164,6 @@ const Docker = {
                 (0, fs_1.mkdirSync)(githubWorkflow);
             const testPlatforms = (testMode === 'all' ? ['playmode', 'editmode', 'COMBINE_RESULTS'] : [testMode]).join(';');
             const homeFolder = runnerUserName === 'root' ? '/root' : `/home/${runnerUserName}`;
-            (0, exec_1.exec)(`echo ===================${homeFolder}===================`);
             const command = `docker run \
         --workdir /github/workspace \
         --rm \
