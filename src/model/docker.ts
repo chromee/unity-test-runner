@@ -29,6 +29,7 @@ const Docker = {
       testMode === 'all' ? ['playmode', 'editmode', 'COMBINE_RESULTS'] : [testMode]
     ).join(';');
     const homeFolder = runnerUserName === 'root' ? '/root' : `/home/${runnerUserName}`;
+    exec(`echo ===================${homeFolder}===================`);
 
     const command = `docker run \
         --workdir /github/workspace \
