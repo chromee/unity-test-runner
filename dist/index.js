@@ -42,7 +42,7 @@ function run() {
         try {
             model_1.Action.checkCompatibility();
             const { workspace, actionFolder } = model_1.Action;
-            const { editorVersion, customImage, projectPath, customParameters, testMode, coverageOptions, artifactsPath, useHostNetwork, sshAgent, gitPrivateToken, githubToken, checkName, } = model_1.Input.getFromUser();
+            const { editorVersion, customImage, projectPath, customParameters, testMode, coverageOptions, artifactsPath, useHostNetwork, sshAgent, runnerUserName, gitPrivateToken, githubToken, checkName, } = model_1.Input.getFromUser();
             const baseImage = new model_1.ImageTag({ editorVersion, customImage });
             const runnerTemporaryPath = process.env.RUNNER_TEMP;
             try {
@@ -57,6 +57,7 @@ function run() {
                     artifactsPath,
                     useHostNetwork,
                     sshAgent,
+                    runnerUserName,
                     gitPrivateToken,
                     githubToken,
                     runnerTemporaryPath,
@@ -154,7 +155,7 @@ const path_1 = __importDefault(__nccwpck_require__(1017));
 const Docker = {
     run(image, parameters, silent = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { actionFolder, editorVersion, workspace, projectPath, customParameters, testMode, coverageOptions, artifactsPath, useHostNetwork, sshAgent, gitPrivateToken, githubToken, runnerTemporaryPath, } = parameters;
+            const { actionFolder, editorVersion, workspace, projectPath, customParameters, testMode, coverageOptions, artifactsPath, useHostNetwork, sshAgent, runnerUserName, gitPrivateToken, githubToken, runnerTemporaryPath, } = parameters;
             const githubHome = path_1.default.join(runnerTemporaryPath, '_github_home');
             if (!(0, fs_1.existsSync)(githubHome))
                 (0, fs_1.mkdirSync)(githubHome);
@@ -162,6 +163,7 @@ const Docker = {
             if (!(0, fs_1.existsSync)(githubWorkflow))
                 (0, fs_1.mkdirSync)(githubWorkflow);
             const testPlatforms = (testMode === 'all' ? ['playmode', 'editmode', 'COMBINE_RESULTS'] : [testMode]).join(';');
+            const sshFolder = runnerUserName === 'root' ? '/root/.ssh' : `/home/${runnerUserName}/.ssh`;
             const command = `docker run \
         --workdir /github/workspace \
         --rm \
@@ -200,7 +202,7 @@ const Docker = {
         --volume "${actionFolder}/steps":"/steps:z" \
         --volume "${actionFolder}/entrypoint.sh":"/entrypoint.sh:z" \
         ${sshAgent ? `--volume ${sshAgent}:/ssh-agent` : ''} \
-        ${sshAgent ? '--volume /home/runner/.ssh/known_hosts:/root/.ssh/known_hosts:ro' : ''} \
+        ${sshAgent ? `--volume ${sshFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro` : ''} \
         ${useHostNetwork ? '--net=host' : ''} \
         ${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
         ${image} \
@@ -394,6 +396,7 @@ const Input = {
         const rawArtifactsPath = (0, core_1.getInput)('artifactsPath') || 'artifacts';
         const rawUseHostNetwork = (0, core_1.getInput)('useHostNetwork') || 'false';
         const sshAgent = (0, core_1.getInput)('sshAgent') || '';
+        const runnerUserName = (0, core_1.getInput)('runnerUserName') || 'runner';
         const gitPrivateToken = (0, core_1.getInput)('gitPrivateToken') || '';
         const githubToken = (0, core_1.getInput)('githubToken') || '';
         const checkName = (0, core_1.getInput)('checkName') || 'Test Results';
@@ -426,6 +429,7 @@ const Input = {
             artifactsPath,
             useHostNetwork,
             sshAgent,
+            runnerUserName,
             gitPrivateToken,
             githubToken,
             checkName,
