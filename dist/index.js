@@ -163,7 +163,7 @@ const Docker = {
             if (!(0, fs_1.existsSync)(githubWorkflow))
                 (0, fs_1.mkdirSync)(githubWorkflow);
             const testPlatforms = (testMode === 'all' ? ['playmode', 'editmode', 'COMBINE_RESULTS'] : [testMode]).join(';');
-            const sshFolder = runnerUserName === 'root' ? '/root/.ssh' : `/home/${runnerUserName}/.ssh`;
+            const homeFolder = runnerUserName === 'root' ? '/root' : `/home/${runnerUserName}`;
             const command = `docker run \
         --workdir /github/workspace \
         --rm \
@@ -202,7 +202,7 @@ const Docker = {
         --volume "${actionFolder}/steps":"/steps:z" \
         --volume "${actionFolder}/entrypoint.sh":"/entrypoint.sh:z" \
         ${sshAgent ? `--volume ${sshAgent}:/ssh-agent` : ''} \
-        ${sshAgent ? `--volume ${sshFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro` : ''} \
+        ${sshAgent ? `--volume ${homeFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro` : ''} \
         ${useHostNetwork ? '--net=host' : ''} \
         ${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
         ${image} \
