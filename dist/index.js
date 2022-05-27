@@ -203,6 +203,7 @@ const Docker = {
         --volume "${actionFolder}/entrypoint.sh":"/entrypoint.sh:z" \
         ${sshAgent ? `--volume ${sshAgent}:/ssh-agent` : ''} \
         ${sshAgent ? `--volume ${homeFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro` : ''} \
+        ${sshAgent ? `--volume ${homeFolder}/.ssh/config:/root/.ssh/config:ro` : ''} \
         ${sshAgent ? `--volume ${homeFolder}/.gitconfig:/root/.gitconfig:ro` : ''} \
         ${useHostNetwork ? '--net=host' : ''} \
         ${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
