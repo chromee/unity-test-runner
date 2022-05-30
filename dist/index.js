@@ -203,9 +203,9 @@ const Docker = {
         --volume "${actionFolder}/entrypoint.sh":"/entrypoint.sh:z `;
             if (sshAgent) {
                 command += `--volume ${sshAgent}:/ssh-agent \
-          --volume ${homeFolder}/.ssh/config:/root/.ssh/config:ro \
-          --volume ${homeFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro \
-          --volume ${homeFolder}/.gitconfig:/root/.gitconfig:ro `;
+--volume ${homeFolder}/.ssh/config:/root/.ssh/config:ro \
+--volume ${homeFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro \
+--volume ${homeFolder}/.gitconfig:/root/.gitconfig:ro `;
                 const fs = __nccwpck_require__(7147);
                 for (const file of fs.readdirSync(`${homeFolder}/.ssh`)) {
                     if (file === 'config' || file === 'known_hosts')
@@ -214,9 +214,9 @@ const Docker = {
                 }
             }
             command += `${useHostNetwork ? '--net=host' : ''} \
-        ${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
-        ${image} \
-        /bin/bash /entrypoint.sh`;
+${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
+${image} \
+/bin/bash /entrypoint.sh`;
             yield (0, exec_1.exec)(command, undefined, { silent });
         });
     },

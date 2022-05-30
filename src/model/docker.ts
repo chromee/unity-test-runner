@@ -70,9 +70,9 @@ const Docker = {
 
     if (sshAgent) {
       command += `--volume ${sshAgent}:/ssh-agent \
-          --volume ${homeFolder}/.ssh/config:/root/.ssh/config:ro \
-          --volume ${homeFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro \
-          --volume ${homeFolder}/.gitconfig:/root/.gitconfig:ro `;
+--volume ${homeFolder}/.ssh/config:/root/.ssh/config:ro \
+--volume ${homeFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro \
+--volume ${homeFolder}/.gitconfig:/root/.gitconfig:ro `;
 
       const fs = require('fs');
       for (const file of fs.readdirSync(`${homeFolder}/.ssh`)) {
@@ -82,9 +82,9 @@ const Docker = {
     }
 
     command += `${useHostNetwork ? '--net=host' : ''} \
-        ${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
-        ${image} \
-        /bin/bash /entrypoint.sh`;
+${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
+${image} \
+/bin/bash /entrypoint.sh`;
 
     await exec(command, undefined, { silent });
   },
