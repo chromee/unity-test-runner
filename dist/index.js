@@ -164,7 +164,7 @@ const Docker = {
                 (0, fs_1.mkdirSync)(githubWorkflow);
             const testPlatforms = (testMode === 'all' ? ['playmode', 'editmode', 'COMBINE_RESULTS'] : [testMode]).join(';');
             const homeFolder = runnerUserName === 'root' ? '/root' : `/home/${runnerUserName}`;
-            const command = `docker run \
+            let command = `docker run \
         --workdir /github/workspace \
         --rm \
         --env UNITY_LICENSE \
@@ -200,10 +200,20 @@ const Docker = {
         --volume "${githubWorkflow}":"/github/workflow:z" \
         --volume "${workspace}":"/github/workspace:z" \
         --volume "${actionFolder}/steps":"/steps:z" \
-        --volume "${actionFolder}/entrypoint.sh":"/entrypoint.sh:z" \
-        ${sshAgent ? `--volume ${sshAgent}:/ssh-agent` : ''} \
-        ${sshAgent ? `--volume ${homeFolder}/.ssh:/root/.ssh:ro` : ''} \
-        ${sshAgent ? `--volume ${homeFolder}/.gitconfig:/root/.gitconfig:ro` : ''} \
+        --volume "${actionFolder}/entrypoint.sh":"/entrypoint.sh:z`;
+            if (sshAgent) {
+                command += `--volume ${sshAgent}:/ssh-agent \
+          --volume ${homeFolder}/.ssh/config:/root/.ssh/config:ro
+          --volume ${homeFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro
+          --volume ${homeFolder}/.gitconfig:/root/.gitconfig:ro`;
+                const fs = __nccwpck_require__(7147);
+                for (const file of fs.readdirSync(`${homeFolder}/.ssh`)) {
+                    if (file === 'config' || file === 'known_hosts')
+                        continue;
+                    command += `--volume ${homeFolder}/.ssh/${file}:${homeFolder}/.ssh/${file}:ro`;
+                }
+            }
+            command += `
         ${useHostNetwork ? '--net=host' : ''} \
         ${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
         ${image} \
