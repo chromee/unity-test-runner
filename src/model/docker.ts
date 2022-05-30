@@ -66,23 +66,22 @@ const Docker = {
         --volume "${githubWorkflow}":"/github/workflow:z" \
         --volume "${workspace}":"/github/workspace:z" \
         --volume "${actionFolder}/steps":"/steps:z" \
-        --volume "${actionFolder}/entrypoint.sh":"/entrypoint.sh:z`;
+        --volume "${actionFolder}/entrypoint.sh":"/entrypoint.sh:z `;
 
     if (sshAgent) {
       command += `--volume ${sshAgent}:/ssh-agent \
-          --volume ${homeFolder}/.ssh/config:/root/.ssh/config:ro
-          --volume ${homeFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro
-          --volume ${homeFolder}/.gitconfig:/root/.gitconfig:ro`;
+          --volume ${homeFolder}/.ssh/config:/root/.ssh/config:ro \
+          --volume ${homeFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro \
+          --volume ${homeFolder}/.gitconfig:/root/.gitconfig:ro `;
 
       const fs = require('fs');
       for (const file of fs.readdirSync(`${homeFolder}/.ssh`)) {
         if (file === 'config' || file === 'known_hosts') continue;
-        command += `--volume ${homeFolder}/.ssh/${file}:${homeFolder}/.ssh/${file}:ro`;
+        command += `--volume ${homeFolder}/.ssh/${file}:${homeFolder}/.ssh/${file}:ro `;
       }
     }
 
-    command += `
-        ${useHostNetwork ? '--net=host' : ''} \
+    command += `${useHostNetwork ? '--net=host' : ''} \
         ${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
         ${image} \
         /bin/bash /entrypoint.sh`;
