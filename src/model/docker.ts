@@ -29,8 +29,14 @@ const Docker = {
       testMode === 'all' ? ['playmode', 'editmode', 'COMBINE_RESULTS'] : [testMode]
     ).join(';');
     const homeFolder = runnerUserName === 'root' ? '/root' : `/home/${runnerUserName}`;
+    let keys = '';
+    const fs = require('fs');
+    for (const file of fs.readdirSync(`${homeFolder}/.ssh`)) {
+      if (!file.startsWith('key-')) continue;
+      keys += `--volume ${homeFolder}/.ssh/${file}:${homeFolder}/.ssh/${file}:ro `;
+    }
 
-    let command = `docker run \
+    const command = `docker run \
         --workdir /github/workspace \
         --rm \
         --env UNITY_LICENSE \
@@ -66,25 +72,16 @@ const Docker = {
         --volume "${githubWorkflow}":"/github/workflow:z" \
         --volume "${workspace}":"/github/workspace:z" \
         --volume "${actionFolder}/steps":"/steps:z" \
-        --volume "${actionFolder}/entrypoint.sh":"/entrypoint.sh:z `;
-
-    if (sshAgent) {
-      command += `--volume ${sshAgent}:/ssh-agent \
---volume ${homeFolder}/.ssh/config:/root/.ssh/config:ro \
---volume ${homeFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro \
---volume ${homeFolder}/.gitconfig:/root/.gitconfig:ro `;
-
-      const fs = require('fs');
-      for (const file of fs.readdirSync(`${homeFolder}/.ssh`)) {
-        if (file === 'config' || file === 'known_hosts') continue;
-        command += `--volume ${homeFolder}/.ssh/${file}:${homeFolder}/.ssh/${file}:ro `;
-      }
-    }
-
-    command += `${useHostNetwork ? '--net=host' : ''} \
-${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
-${image} \
-/bin/bash /entrypoint.sh`;
+        --volume "${actionFolder}/entrypoint.sh":"/entrypoint.sh:z" \
+        ${sshAgent ? `--volume ${sshAgent}:/ssh-agent` : ''} \
+        ${sshAgent ? `--volume ${homeFolder}/.ssh/config:/root/.ssh/config:ro` : ''} \
+        ${sshAgent ? `--volume ${homeFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro` : ''} \
+        ${sshAgent ? keys : ''} \
+        ${sshAgent ? `--volume ${homeFolder}/.gitconfig:/root/.gitconfig:ro` : ''} \
+        ${useHostNetwork ? '--net=host' : ''} \
+        ${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
+        ${image} \
+        /bin/bash /entrypoint.sh`;
 
     await exec(command, undefined, { silent });
   },
