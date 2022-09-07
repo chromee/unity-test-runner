@@ -34,6 +34,7 @@ const Docker = {
       gitPrivateToken,
       githubToken,
       runnerTemporaryPath,
+      chownFilesTo,
     } = parameters;
 
     const githubHome = path.join(runnerTemporaryPath, '_github_home');
@@ -82,6 +83,7 @@ const Docker = {
                 --env RUNNER_TEMP \
                 --env RUNNER_WORKSPACE \
                 --env GIT_PRIVATE_TOKEN="${gitPrivateToken}" \
+                --env CHOWN_FILES_TO="${chownFilesTo}" \
                 ${sshAgent ? '--env SSH_AUTH_SOCK=/ssh-agent' : ''} \
                 --volume "${githubHome}:/root:z" \
                 --volume "${githubWorkflow}:/github/workflow:z" \
@@ -118,6 +120,7 @@ const Docker = {
       gitPrivateToken,
       githubToken,
       runnerTemporaryPath,
+      chownFilesTo,
     } = parameters;
 
     const githubHome = path.join(runnerTemporaryPath, '_github_home');
@@ -159,6 +162,7 @@ const Docker = {
                 --env RUNNER_TEMP \
                 --env RUNNER_WORKSPACE \
                 --env GIT_PRIVATE_TOKEN="${gitPrivateToken}" \
+                --env CHOWN_FILES_TO="${chownFilesTo}" \
                 ${sshAgent ? '--env SSH_AUTH_SOCK=c:/ssh-agent' : ''} \
                 --volume "${githubHome}":"c:/root" \
                 --volume "${githubWorkflow}":"c:/github/workflow" \
