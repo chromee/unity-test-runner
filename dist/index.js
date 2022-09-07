@@ -96,7 +96,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const path_1 = __importDefault(__nccwpck_require__(1017));
 const Action = {
     get supportedPlatforms() {
-        return ['linux'];
+        return ['linux', 'win32'];
     },
     get isRunningLocally() {
         return process.env.RUNNER_WORKSPACE === undefined;
@@ -155,70 +155,140 @@ const path_1 = __importDefault(__nccwpck_require__(1017));
 const Docker = {
     run(image, parameters, silent = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { actionFolder, editorVersion, workspace, projectPath, customParameters, testMode, coverageOptions, artifactsPath, useHostNetwork, sshAgent, runnerUserName, gitPrivateToken, githubToken, runnerTemporaryPath, } = parameters;
-            const githubHome = path_1.default.join(runnerTemporaryPath, '_github_home');
-            if (!(0, fs_1.existsSync)(githubHome))
-                (0, fs_1.mkdirSync)(githubHome);
-            const githubWorkflow = path_1.default.join(runnerTemporaryPath, '_github_workflow');
-            if (!(0, fs_1.existsSync)(githubWorkflow))
-                (0, fs_1.mkdirSync)(githubWorkflow);
-            const testPlatforms = (testMode === 'all' ? ['playmode', 'editmode', 'COMBINE_RESULTS'] : [testMode]).join(';');
-            const homeFolder = runnerUserName === 'root' ? '/root' : `/home/${runnerUserName}`;
-            let keys = '';
-            const fs = __nccwpck_require__(7147);
-            for (const file of fs.readdirSync(`${homeFolder}/.ssh`)) {
-                if (!file.startsWith('key-'))
-                    continue;
-                keys += `--volume ${homeFolder}/.ssh/${file}:${homeFolder}/.ssh/${file}:ro `;
+            let runCommand = '';
+            switch (process.platform) {
+                case 'linux':
+                    runCommand = this.getLinuxCommand(image, parameters);
+                    break;
+                case 'win32':
+                    runCommand = this.getWindowsCommand(image, parameters);
+                    break;
+                default:
+                    throw new Error(`Operation system, ${process.platform}, is not supported yet.`);
             }
-            const command = `docker run \
-        --workdir /github/workspace \
-        --rm \
-        --env UNITY_LICENSE \
-        --env UNITY_LICENSE_FILE \
-        --env UNITY_EMAIL \
-        --env UNITY_PASSWORD \
-        --env UNITY_SERIAL \
-        --env UNITY_VERSION="${editorVersion}" \
-        --env PROJECT_PATH="${projectPath}" \
-        --env CUSTOM_PARAMETERS="${customParameters}" \
-        --env TEST_PLATFORMS="${testPlatforms}" \
-        --env COVERAGE_OPTIONS="${coverageOptions}" \
-        --env COVERAGE_RESULTS_PATH="CodeCoverage" \
-        --env ARTIFACTS_PATH="${artifactsPath}" \
-        --env GITHUB_REF \
-        --env GITHUB_SHA \
-        --env GITHUB_REPOSITORY \
-        --env GITHUB_ACTOR \
-        --env GITHUB_WORKFLOW \
-        --env GITHUB_HEAD_REF \
-        --env GITHUB_BASE_REF \
-        --env GITHUB_EVENT_NAME \
-        --env GITHUB_WORKSPACE=/github/workspace \
-        --env GITHUB_ACTION \
-        --env GITHUB_EVENT_PATH \
-        --env RUNNER_OS \
-        --env RUNNER_TOOL_CACHE \
-        --env RUNNER_TEMP \
-        --env RUNNER_WORKSPACE \
-        --env GIT_PRIVATE_TOKEN="${gitPrivateToken}" \
-        ${sshAgent ? '--env SSH_AUTH_SOCK=/ssh-agent' : ''} \
-        --volume "${githubHome}":"/root:z" \
-        --volume "${githubWorkflow}":"/github/workflow:z" \
-        --volume "${workspace}":"/github/workspace:z" \
-        --volume "${actionFolder}/steps":"/steps:z" \
-        --volume "${actionFolder}/entrypoint.sh":"/entrypoint.sh:z" \
-        ${sshAgent ? `--volume ${sshAgent}:/ssh-agent` : ''} \
-        ${sshAgent ? `--volume ${homeFolder}/.ssh/config:/root/.ssh/config:ro` : ''} \
-        ${sshAgent ? `--volume ${homeFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro` : ''} \
-        ${sshAgent ? keys : ''} \
-        ${sshAgent ? `--volume ${homeFolder}/.gitconfig:/root/.gitconfig:ro` : ''} \
-        ${useHostNetwork ? '--net=host' : ''} \
-        ${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
-        ${image} \
-        /bin/bash /entrypoint.sh`;
-            yield (0, exec_1.exec)(command, undefined, { silent });
+            yield (0, exec_1.exec)(runCommand, undefined, { silent });
         });
+    },
+    getLinuxCommand(image, parameters) {
+        const { actionFolder, editorVersion, workspace, projectPath, customParameters, testMode, coverageOptions, artifactsPath, useHostNetwork, sshAgent, runnerUserName, gitPrivateToken, githubToken, runnerTemporaryPath, } = parameters;
+        const githubHome = path_1.default.join(runnerTemporaryPath, '_github_home');
+        if (!(0, fs_1.existsSync)(githubHome))
+            (0, fs_1.mkdirSync)(githubHome);
+        const githubWorkflow = path_1.default.join(runnerTemporaryPath, '_github_workflow');
+        if (!(0, fs_1.existsSync)(githubWorkflow))
+            (0, fs_1.mkdirSync)(githubWorkflow);
+        const testPlatforms = (testMode === 'all' ? ['playmode', 'editmode', 'COMBINE_RESULTS'] : [testMode]).join(';');
+        const homeFolder = runnerUserName === 'root' ? '/root' : `/home/${runnerUserName}`;
+        let keys = '';
+        const fs = __nccwpck_require__(7147);
+        for (const file of fs.readdirSync(`${homeFolder}/.ssh`)) {
+            if (!file.startsWith('key-'))
+                continue;
+            keys += `--volume ${homeFolder}/.ssh/${file}:${homeFolder}/.ssh/${file}:ro `;
+        }
+        return `docker run \
+                --workdir /github/workspace \
+                --rm \
+                --env UNITY_LICENSE \
+                --env UNITY_LICENSE_FILE \
+                --env UNITY_EMAIL \
+                --env UNITY_PASSWORD \
+                --env UNITY_SERIAL \
+                --env UNITY_VERSION="${editorVersion}" \
+                --env PROJECT_PATH="${projectPath}" \
+                --env CUSTOM_PARAMETERS="${customParameters}" \
+                --env TEST_PLATFORMS="${testPlatforms}" \
+                --env COVERAGE_OPTIONS="${coverageOptions}" \
+                --env COVERAGE_RESULTS_PATH="CodeCoverage" \
+                --env ARTIFACTS_PATH="${artifactsPath}" \
+                --env GITHUB_REF \
+                --env GITHUB_SHA \
+                --env GITHUB_REPOSITORY \
+                --env GITHUB_ACTOR \
+                --env GITHUB_WORKFLOW \
+                --env GITHUB_HEAD_REF \
+                --env GITHUB_BASE_REF \
+                --env GITHUB_EVENT_NAME \
+                --env GITHUB_WORKSPACE="/github/workspace" \
+                --env GITHUB_ACTION \
+                --env GITHUB_EVENT_PATH \
+                --env RUNNER_OS \
+                --env RUNNER_TOOL_CACHE \
+                --env RUNNER_TEMP \
+                --env RUNNER_WORKSPACE \
+                --env GIT_PRIVATE_TOKEN="${gitPrivateToken}" \
+                ${sshAgent ? '--env SSH_AUTH_SOCK=/ssh-agent' : ''} \
+                --volume "${githubHome}:/root:z" \
+                --volume "${githubWorkflow}:/github/workflow:z" \
+                --volume "${workspace}:/github/workspace:z" \
+                --volume "${actionFolder}/steps:/steps:z" \
+                --volume "${actionFolder}/entrypoint.sh:/entrypoint.sh:z" \
+                ${sshAgent ? `--volume ${sshAgent}:/ssh-agent` : ''} \
+                ${sshAgent ? `--volume ${homeFolder}/.ssh/config:/root/.ssh/config:ro` : ''} \
+                ${sshAgent
+            ? `--volume ${homeFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro`
+            : ''} \
+                ${sshAgent ? keys : ''} \
+                ${sshAgent ? `--volume ${homeFolder}/.gitconfig:/root/.gitconfig:ro` : ''} \
+                ${useHostNetwork ? '--net=host' : ''} \
+                ${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
+                ${image} \
+                /bin/bash -c /entrypoint.sh`;
+    },
+    getWindowsCommand(image, parameters) {
+        const { actionFolder, editorVersion, workspace, projectPath, customParameters, testMode, coverageOptions, artifactsPath, useHostNetwork, sshAgent, gitPrivateToken, githubToken, runnerTemporaryPath, } = parameters;
+        const githubHome = path_1.default.join(runnerTemporaryPath, '_github_home');
+        if (!(0, fs_1.existsSync)(githubHome))
+            (0, fs_1.mkdirSync)(githubHome);
+        const githubWorkflow = path_1.default.join(runnerTemporaryPath, '_github_workflow');
+        if (!(0, fs_1.existsSync)(githubWorkflow))
+            (0, fs_1.mkdirSync)(githubWorkflow);
+        const testPlatforms = (testMode === 'all' ? ['playmode', 'editmode', 'COMBINE_RESULTS'] : [testMode]).join(';');
+        return `docker run \
+                --workdir /github/workspace \
+                --rm \
+                --env UNITY_LICENSE \
+                --env UNITY_LICENSE_FILE \
+                --env UNITY_EMAIL \
+                --env UNITY_PASSWORD \
+                --env UNITY_SERIAL \
+                --env UNITY_VERSION="${editorVersion}" \
+                --env PROJECT_PATH="${projectPath}" \
+                --env CUSTOM_PARAMETERS="${customParameters}" \
+                --env TEST_PLATFORMS="${testPlatforms}" \
+                --env COVERAGE_OPTIONS="${coverageOptions}" \
+                --env COVERAGE_RESULTS_PATH="CodeCoverage" \
+                --env ARTIFACTS_PATH="${artifactsPath}" \
+                --env GITHUB_REF \
+                --env GITHUB_SHA \
+                --env GITHUB_REPOSITORY \
+                --env GITHUB_ACTOR \
+                --env GITHUB_WORKFLOW \
+                --env GITHUB_HEAD_REF \
+                --env GITHUB_BASE_REF \
+                --env GITHUB_EVENT_NAME \
+                --env GITHUB_WORKSPACE="/github/workspace" \
+                --env GITHUB_ACTION \
+                --env GITHUB_EVENT_PATH \
+                --env RUNNER_OS \
+                --env RUNNER_TOOL_CACHE \
+                --env RUNNER_TEMP \
+                --env RUNNER_WORKSPACE \
+                --env GIT_PRIVATE_TOKEN="${gitPrivateToken}" \
+                ${sshAgent ? '--env SSH_AUTH_SOCK=c:/ssh-agent' : ''} \
+                --volume "${githubHome}":"c:/root" \
+                --volume "${githubWorkflow}":"c:/github/workflow" \
+                --volume "${workspace}":"c:/github/workspace" \
+                --volume "${actionFolder}/steps":"c:/steps" \
+                --volume "${actionFolder}":"c:/dist" \
+                ${sshAgent ? `--volume ${sshAgent}:c:/ssh-agent` : ''} \
+                ${sshAgent
+            ? `--volume c:/Users/Administrator/.ssh/known_hosts:c:/root/.ssh/known_hosts`
+            : ''} \
+                ${useHostNetwork ? '--net=host' : ''} \
+                ${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
+                ${image} \
+                powershell c:/dist/entrypoint.ps1`;
     },
 };
 exports["default"] = Docker;
@@ -238,7 +308,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const platform_1 = __importDefault(__nccwpck_require__(9707));
 class ImageTag {
     constructor(imageProperties) {
-        const { editorVersion = '2019.2.11f1', targetPlatform = platform_1.default.types.StandaloneLinux64, customImage, } = imageProperties;
+        const { editorVersion = '2019.2.11f1', targetPlatform = ImageTag.getImagePlatformType(process.platform), customImage, } = imageProperties;
         if (!ImageTag.versionPattern.test(editorVersion)) {
             throw new Error(`Invalid version "${editorVersion}".`);
         }
@@ -261,7 +331,7 @@ class ImageTag {
             generic: '',
             webgl: 'webgl',
             mac: 'mac-mono',
-            windows: 'windows-mono',
+            windows: 'windows-il2cpp',
             linux: 'base',
             linuxIl2cpp: 'linux-il2cpp',
             android: 'android',
@@ -273,8 +343,20 @@ class ImageTag {
         switch (platform) {
             case 'linux':
                 return 'ubuntu';
+            case 'win32':
+                return 'windows';
             default:
-                throw new Error('The Operating System of this runner is not yet supported.');
+                throw new Error(`The Operating System of this runner, "${platform}", is not yet supported.`);
+        }
+    }
+    static getImagePlatformType(platform) {
+        switch (platform) {
+            case 'linux':
+                return platform_1.default.types.StandaloneLinux64;
+            case 'win32':
+                return platform_1.default.types.StandaloneWindows;
+            default:
+                throw new Error(`The Operating System of this runner, "${platform}", is not yet supported.`);
         }
     }
     static getTargetPlatformSuffix(targetPlatform, editorVersion) {
@@ -931,6 +1013,10 @@ const ResultsParser = {
             return testMeta;
         }
         const trace = failure['stack-trace']._cdata;
+        if (trace === undefined) {
+            core.warning(`No cdata in stack trace for test case: ${fullname}`);
+            return testMeta;
+        }
         const point = ResultsParser.findAnnotationPoint(trace);
         if (!point.path || !point.line) {
             core.warning(`Not able to find annotation point for failed test! Test trace: ${trace}`);
