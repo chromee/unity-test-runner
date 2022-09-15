@@ -1,6 +1,7 @@
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync } from 'fs';
 import { exec } from '@actions/exec';
 import path from 'path';
+import { userInfo } from 'os';
 
 const Docker = {
   async run(image, parameters, silent = false) {
@@ -43,6 +44,12 @@ const Docker = {
     const testPlatforms = (
       testMode === 'all' ? ['playmode', 'editmode', 'COMBINE_RESULTS'] : [testMode]
     ).join(';');
+    const homedir = userInfo().homedir;
+    let keys = '';
+    for (const file of readdirSync(`${homedir}/.ssh`)) {
+      if (!file.startsWith('key-')) continue;
+      keys += `--volume ${homedir}/.ssh/${file}:${homedir}/.ssh/${file}:ro `;
+    }
 
     return `docker run \
                 --workdir /github/workspace \
@@ -84,8 +91,10 @@ const Docker = {
                 --volume "${actionFolder}/entrypoint.sh:/entrypoint.sh:z" \
                 ${sshAgent ? `--volume ${sshAgent}:/ssh-agent` : ''} \
                 ${
-                  sshAgent ? `--volume /home/runner/.ssh/known_hosts:/root/.ssh/known_hosts:ro` : ''
+                  sshAgent ? `--volume ${homedir}/.ssh/known_hosts:/root/.ssh/known_hosts:ro` : ''
                 } \
+                ${sshAgent ? keys : ''} \
+                ${sshAgent ? `--volume ${homedir}/.gitconfig:/root/.gitconfig:ro` : ''} \
                 ${useHostNetwork ? '--net=host' : ''} \
                 ${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
                 ${image} \
