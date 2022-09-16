@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+ls -la /root/.ssh
+
 #
 # Create directory for license activation
 #

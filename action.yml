@@ -36,6 +36,10 @@ inputs:
     required: false
     default: ''
     description: 'SSH Agent path to forward to the container.'
+  runnerUserName:
+    required: false
+    default: 'runner'
+    description: 'Name of User to run Runner. This should be set primarily if you are using a self-hosted runner and ssh-agent at the same time.'
   gitPrivateToken:
     required: false
     default: ''

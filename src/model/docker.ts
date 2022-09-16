@@ -30,6 +30,7 @@ const Docker = {
       artifactsPath,
       useHostNetwork,
       sshAgent,
+      runnerUserName,
       gitPrivateToken,
       githubToken,
       runnerTemporaryPath,
@@ -43,6 +44,13 @@ const Docker = {
     const testPlatforms = (
       testMode === 'all' ? ['playmode', 'editmode', 'COMBINE_RESULTS'] : [testMode]
     ).join(';');
+    const homeFolder = runnerUserName === 'root' ? '/root' : `/home/${runnerUserName}`;
+    let keys = '';
+    const fs = require('fs');
+    for (const file of fs.readdirSync(`${homeFolder}/.ssh`)) {
+      if (!file.startsWith('key-')) continue;
+      keys += `--volume ${homeFolder}/.ssh/${file}:${homeFolder}/.ssh/${file}:ro `;
+    }
 
     return `docker run \
                 --workdir /github/workspace \
@@ -83,9 +91,14 @@ const Docker = {
                 --volume "${actionFolder}/steps:/steps:z" \
                 --volume "${actionFolder}/entrypoint.sh:/entrypoint.sh:z" \
                 ${sshAgent ? `--volume ${sshAgent}:/ssh-agent` : ''} \
+                ${sshAgent ? `--volume ${homeFolder}/.ssh/config:/root/.ssh/config:ro` : ''} \
                 ${
-                  sshAgent ? `--volume /home/runner/.ssh/known_hosts:/root/.ssh/known_hosts:ro` : ''
+                  sshAgent
+                    ? `--volume ${homeFolder}/.ssh/known_hosts:/root/.ssh/known_hosts:ro`
+                    : ''
                 } \
+                ${sshAgent ? keys : ''} \
+                ${sshAgent ? `--volume ${homeFolder}/.gitconfig:/root/.gitconfig:ro` : ''} \
                 ${useHostNetwork ? '--net=host' : ''} \
                 ${githubToken ? '--env USE_EXIT_CODE=false' : '--env USE_EXIT_CODE=true'} \
                 ${image} \
